@@ -1,0 +1,9 @@
+{
+  "name": "D",
+  "tree": {
+    "$path": "src",
+    "Promise": {
+      "$path": "modules/Promise/lib"
+    }
+  }
+}

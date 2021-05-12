@@ -1,0 +1,22 @@
+{
+  "name": "D",
+  "tree": {
+    "$className": "DataModel",
+    "ReplicatedStorage": {
+      "D": {
+        "$path": "."
+      },
+      "MockDataStoreService": {
+        "$path": "modules/MockDataStoreService/lib"
+      },
+      "TestEZ": {
+        "$path": "modules/TestEZ/src"
+      }
+    },
+    "ServerScriptService": {
+      "run-tests": {
+        "$path": "run-tests.server.lua"
+      }
+    }
+  }
+}
