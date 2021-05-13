@@ -3,7 +3,7 @@ local D = {}
 
 local loadedStores = {}
 
-function D.LoadStore(storeName)
+function D.loadStore(storeName)
   local store = loadedStores[storeName]
   if not store then
     store = Store.new(storeName)

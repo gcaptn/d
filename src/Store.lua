@@ -17,7 +17,7 @@ local msg = {
       :format(key)
   end,
   commitNotLoaded = function(key)
-    return ("Cannot commit entry %s because it was not loaded had just been cleared.")
+    return ("Cannot commit entry %s because it was not loaded or had just been cleared.")
       :format(key)
   end,
   versionMismatch = function(key, entryIndex, datastoreEntryIndex)
@@ -42,6 +42,18 @@ local function shallow(value)
   end
 end
 
+local function deep(value)
+  if type(value) == "table" then
+    local new = {}
+    for i, v in pairs(value) do
+      new[i] = deep(v)
+    end
+    return new
+  else
+    return value
+  end
+end
+
 local function blankEntry()
   return {
     _meta = {
@@ -55,7 +67,7 @@ function Store.new(name)
   
   return setmetatable({
     _name = name,
-    _loadedEntries = {},
+    _loadedEntries = {}
   }, Store)
 end
 
@@ -85,6 +97,10 @@ function Store:load(key)
         entry._data = datastoreEntry
       end
 
+      if entry._data == nil then
+        entry._data = deep(self._defaultValue)
+      end
+
       self._loadedEntries[key] = entry
       resolve(entry._data)
     end
@@ -95,15 +111,8 @@ function Store:isLoaded(key)
   return self._loadedEntries[key] ~= nil
 end
 
-function Store:get(key)
-  key = tostring(key)
-  local entry = self._loadedEntries[key];
-
-  if not entry then
-    return error(msg.getNotLoaded(key))
-  end
-
-  return shallow(entry._data)
+function Store:defaultTo(value)
+  self._defaultValue = deep(value)
 end
 
 function Store:set(key, data)

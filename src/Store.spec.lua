@@ -1,6 +1,5 @@
 local Store = require(script.Parent.Store)
 local MockDataStores = require(game.ReplicatedStorage.MockDataStoreService)
-local RunService = game:GetService("RunService")
 
 return function()
   describe("Stores", function()
@@ -60,21 +59,42 @@ return function()
         local _, storeValue = store:load("testKey"):await()
         expect(storeValue).to.equal("testValue")
       end)
+
+      it("loads the store's default value when empty", function()
+        local default = {
+          level = 0,
+          items = {
+            {
+              name = "donut",
+              type = "food"
+            }
+          }
+        }
+
+        store:defaultTo(default)
+        local _, storeValue = store:load("emptyKey"):await()
+
+        expect(function()
+          assert(type(storeValue) == "table")
+          assert(storeValue.level == 0)
+          assert(type(storeValue.items) == "table")
+          assert(type(storeValue.items[1]) == "table")
+          assert(storeValue.items[1].name == "donut")
+          assert(storeValue.items[1].type == "food")
+        end).never.to.throw()
+      end)
     end)
 
-    describe("get", function()
-      it("throws when an entry has never been loaded", function()
-        expect(function()
-          store:get("testKey")
-        end).to.throw()
-      end)
-
-      it("returns the entry data", function()
-        store._loadedEntries["testKey"] = {
-          _meta = { version = 0 },
-          _data = "testValue"
+    describe("defaultTo", function()
+      it("sets a deep copy of a value as the default value", function()
+        local default = {
+          nested = {}
         }
-        expect(store:get("testKey")).to.equal("testValue")
+
+        store:defaultTo(default)
+        local _, storeValue = store:load("emptyKey2"):await()
+        expect(storeValue).never.to.equal(default)
+        expect(storeValue.items).never.to.equal(default.nested)
       end)
     end)
 
