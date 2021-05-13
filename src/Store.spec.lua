@@ -82,6 +82,8 @@ return function()
           assert(storeValue.items[1].name == "donut")
           assert(storeValue.items[1].type == "food")
         end).never.to.throw()
+        expect(storeValue).never.to.equal(store._defaultValue)
+        expect(storeValue.items).never.to.equal(store._defaultValue.items)
       end)
     end)
 
@@ -92,9 +94,9 @@ return function()
         }
 
         store:defaultTo(default)
-        local _, storeValue = store:load("emptyKey2"):await()
-        expect(storeValue).never.to.equal(default)
-        expect(storeValue.items).never.to.equal(default.nested)
+        local storeDefault = store._defaultValue
+        expect(storeDefault).never.to.equal(default)
+        expect(storeDefault.nested).never.to.equal(default.nested)
       end)
     end)
 

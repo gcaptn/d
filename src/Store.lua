@@ -9,7 +9,7 @@ local msg = {
     return "Cannot construct a store without a string name!"
   end,
   getNotLoaded = function(key)
-    return ("Cannot set entry %s because it was not loaded or had just been cleared.")
+    return ("Cannot get entry %s because it was not loaded or had just been cleared.")
       :format(key)
   end,
   setNotLoaded = function(key)
