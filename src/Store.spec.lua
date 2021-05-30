@@ -32,13 +32,33 @@ return function()
       expect(Store.new).to.throw()
     end)
 
+    describe("get", function()
+      it("throws when an entry has never been retrieved", function()
+        expect(function()
+          store:get("testKey")
+        end).to.throw()
+      end)
+
+      it("gets a shallow copy of the loaded value", function()
+        local entry = {
+          _meta = { version = 0 },
+          _data = { testValue = true }
+        }
+        store._loadedEntries["testKey"] = entry
+        local value = store:get("testKey")
+
+        expect(value.testValue).to.equal(true)
+        expect(value).never.to.equal(entry._data)
+      end)
+    end)
+
     describe("load", function()
       it("gets from the active entries first", function()
         store._loadedEntries["testKey"] = {
           _data = "testValue"
         }
-        local _, storeValue = store:load("testKey"):await()
-        expect(storeValue).to.equal("testValue")
+        store:load("testKey"):await()
+        expect(store:get("testKey")).to.equal("testValue")
       end)
 
       it("loads from the datastore when there are no active entries found", function()
@@ -48,16 +68,16 @@ return function()
             _data = "testValue"
           }
         })
-        local _, storeValue = store:load("testKey"):await()
-        expect(storeValue).to.equal("testValue")
+        store:load("testKey"):await()
+        expect(store:get("testKey")).to.equal("testValue")
       end)
 
       it("migrates incompatible values from the datastore", function()
         datastore:ImportFromJSON({
           testKey = "testValue"
         })
-        local _, storeValue = store:load("testKey"):await()
-        expect(storeValue).to.equal("testValue")
+        store:load("testKey"):await()
+        expect(store:get("testKey")).to.equal("testValue")
       end)
 
       it("loads the store's default value when empty", function()
@@ -72,7 +92,8 @@ return function()
         }
 
         store:defaultTo(default)
-        local _, storeValue = store:load("emptyKey"):await()
+        store:load("emptyKey"):await()
+        local storeValue = store:get("emptyKey")
 
         expect(function()
           assert(type(storeValue) == "table")

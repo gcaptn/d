@@ -27,7 +27,7 @@ local msg = {
   willMigrate = function(key)
     return ("Found an incompatible entry at datastore key %s. Data will be migrated.")
       :format(key)
-  end,
+  end
 }
 
 local function shallow(value)
@@ -77,13 +77,24 @@ function Store.isEntry(value)
     and type(value._meta.version) == "number"
 end
 
+function Store:get(key)
+  key = tostring(key)
+  local entry = self._loadedEntries[key]
+
+  if not entry then
+    error(msg.getNotLoaded(key))
+  end
+
+  return shallow(entry._data)
+end
+
 function Store:load(key)
   key = tostring(key)
-  local entry = self._loadedEntries[key];
+  local entry = self._loadedEntries[key]
 
   return Promise.new(function(resolve)
     if entry then
-      resolve(shallow(entry._data))
+      resolve()
     else
       local datastoreEntry = DS.Get(self._name, key)
 
@@ -102,12 +113,13 @@ function Store:load(key)
       end
 
       self._loadedEntries[key] = entry
-      resolve(entry._data)
+      resolve()
     end
   end)
 end
 
 function Store:isLoaded(key)
+  key = tostring(key)
   return self._loadedEntries[key] ~= nil
 end
 

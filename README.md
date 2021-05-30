@@ -12,7 +12,8 @@ posts:defaultTo({
 })
 
 posts:load(key)
-  :andThen(function(data)
+  :andThen(function()
+    local data = posts:get(key)
     data.title = "My first post"
     data.content = "Hello world!"
     posts:set(key, data)
