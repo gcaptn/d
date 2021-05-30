@@ -12,12 +12,10 @@ posts:defaultTo({
 })
 
 posts:load(key)
-  :andThen(function()
-    local data = posts:get(key)
-    data.title = "My first post"
-    data.content = "Hello world!"
-    posts:set(key, data)
-    return posts:commit(key)
+  :andThen(function(entry)
+    entry.data.title = "My first post"
+    entry.data.content = "Hello world!"
+    return posts:commit(key, entry)
   end)
   :andThen(function()
     print("done!")

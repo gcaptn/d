@@ -14,7 +14,7 @@ return function()
 
     it("can validate entries", function()
       expect(Store.isEntry({
-        _meta = {
+        meta = {
           version = 0
         }
       })).to.equal(true)
@@ -22,7 +22,7 @@ return function()
       expect(Store.isEntry()).to.equal(false)
 
       expect(Store.isEntry({
-        _meta = {
+        meta = {
           version = ""
         }
       })).to.equal(false)
@@ -32,52 +32,24 @@ return function()
       expect(Store.new).to.throw()
     end)
 
-    describe("get", function()
-      it("throws when an entry has never been retrieved", function()
-        expect(function()
-          store:get("testKey")
-        end).to.throw()
-      end)
-
-      it("gets a shallow copy of the loaded value", function()
-        local entry = {
-          _meta = { version = 0 },
-          _data = { testValue = true }
-        }
-        store._loadedEntries["testKey"] = entry
-        local value = store:get("testKey")
-
-        expect(value.testValue).to.equal(true)
-        expect(value).never.to.equal(entry._data)
-      end)
-    end)
-
     describe("load", function()
-      it("gets from the active entries first", function()
-        store._loadedEntries["testKey"] = {
-          _data = "testValue"
-        }
-        store:load("testKey"):await()
-        expect(store:get("testKey")).to.equal("testValue")
-      end)
-
-      it("loads from the datastore when there are no active entries found", function()
+      it("loads from the datastore", function()
         datastore:ImportFromJSON({
           testKey = {
-            _meta = { version = 0 },
-            _data = "testValue"
+            meta = { version = 0 },
+            data = "testValue"
           }
         })
-        store:load("testKey"):await()
-        expect(store:get("testKey")).to.equal("testValue")
+        local _, entry = store:load("testKey"):await()
+        expect(entry.data).to.equal("testValue")
       end)
 
       it("migrates incompatible values from the datastore", function()
         datastore:ImportFromJSON({
           testKey = "testValue"
         })
-        store:load("testKey"):await()
-        expect(store:get("testKey")).to.equal("testValue")
+        local _, entry = store:load("testKey"):await()
+        expect(entry.data).to.equal("testValue")
       end)
 
       it("loads the store's default value when empty", function()
@@ -92,19 +64,19 @@ return function()
         }
 
         store:defaultTo(default)
-        store:load("emptyKey"):await()
-        local storeValue = store:get("emptyKey")
+        local _, entry = store:load("emptyKey"):await()
+        local value = entry.data
 
         expect(function()
-          assert(type(storeValue) == "table")
-          assert(storeValue.level == 0)
-          assert(type(storeValue.items) == "table")
-          assert(type(storeValue.items[1]) == "table")
-          assert(storeValue.items[1].name == "donut")
-          assert(storeValue.items[1].type == "food")
+          assert(type(value) == "table")
+          assert(value.level == 0)
+          assert(type(value.items) == "table")
+          assert(type(value.items[1]) == "table")
+          assert(value.items[1].name == "donut")
+          assert(value.items[1].type == "food")
         end).never.to.throw()
-        expect(storeValue).never.to.equal(store._defaultValue)
-        expect(storeValue.items).never.to.equal(store._defaultValue.items)
+        expect(value).never.to.equal(store._defaultValue)
+        expect(value.items).never.to.equal(store._defaultValue.items)
       end)
     end)
 
@@ -121,24 +93,8 @@ return function()
       end)
     end)
 
-    describe("set", function()
-      it("throws when an entry has never been loaded", function()
-        expect(function()
-          store:set("testKey", "testValue")
-        end).to.throw()
-      end)
-
-      it("only modifies the \"data\" key in the entry", function()
-        store._loadedEntries["testKey"] = {
-          _meta = { version = 0 }
-        }
-        store:set("testKey", "testValue")
-        expect(store._loadedEntries["testKey"]._data).to.equal("testValue")
-      end)
-    end)
-
     describe("commit", function()
-      it("throws when an entry has never been retrieved", function()
+      it("throws when no value is provided", function()
         expect(function()
           store:commit("testKey")
         end).to.throw()
@@ -147,61 +103,18 @@ return function()
       it("will not write to store when the version mismatches", function()
         datastore:ImportFromJSON({
           testKey = {
-            _meta = { version = 1 },
-            _data = "correctEntry"
+            meta = { version = 1 },
+            data = "correctEntry"
           }
         })
 
-        store._loadedEntries["testKey"] = {
-          _meta = { version = 0 },
-          _data = "wrongEntry"
-        }
-
-        store:commit("testKey"):await()
-        expect(datastore:GetAsync("testKey")._data).to.equal("correctEntry")
-      end)
-
-      it("removes an entry from the active entries when successful", function()
         local entry = {
-          _meta = { version = 0 }
+          meta = { version = 0 },
+          data = "wrongEntry"
         }
 
-        datastore:ImportFromJSON({
-          testKey = entry
-        })
-
-        store._loadedEntries["testKey"] = entry
-
-        store:commit("testKey"):await()
-        expect(store._loadedEntries["testKey"]).never.to.be.ok()
-      end)
-    end)
-
-    describe("commitAll", function()
-      it("commits every entry to the datastore", function()
-        local expected = {
-          testKey1 = { _meta = { version = 1 } },
-          testKey2 = { _meta = { version = 1 } },
-          testKey3 = { _meta = { version = 1 } },
-          testKey4 = { _meta = { version = 1 } }
-        }
-
-        store._loadedEntries = {
-          testKey1 = { _meta = { version = 0 } },
-          testKey2 = { _meta = { version = 0 } },
-          testKey3 = { _meta = { version = 0 } },
-          testKey4 = { _meta = { version = 0 } }
-        }
-
-        datastore:ImportFromJSON(store._loadedEntries)
-
-        local s = store:commitAll():await()
-        expect(s).to.equal(true)
-
-        for key, _ in pairs(expected) do
-          expect(datastore:GetAsync(key)._meta.version)
-            .to.equal(expected[key]._meta.version)
-        end
+        store:commit("testKey", entry):await()
+        expect(datastore:GetAsync("testKey").data).to.equal("correctEntry")
       end)
     end)
   end)
