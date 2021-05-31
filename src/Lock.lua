@@ -2,7 +2,7 @@ local Lock = {}
 
 Lock.constants = {
   jobId = game.JobId,
-  lockExpire = 15 * 60
+  lockExpire = 15 * 60,
 }
 
 function Lock.new()
@@ -19,10 +19,11 @@ function Lock.isValid(value)
 end
 
 function Lock.isAccessible(lock)
-  return Lock.isValid(lock) and (
-    lock.jobId == Lock.constants.jobId
-    or os.time() - lock.timestamp >= Lock.constants.lockExpire
-  )
+  return Lock.isValid(lock)
+    and (
+      lock.jobId == Lock.constants.jobId
+      or os.time() - lock.timestamp >= Lock.constants.lockExpire
+    )
 end
 
 return Lock

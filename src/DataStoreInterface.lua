@@ -1,7 +1,7 @@
-local DataStores = game:GetService("ReplicatedStorage")
+local DataStores = game
+  :GetService("ReplicatedStorage")
   :FindFirstChild("MockDataStoreService")
-DataStores = DataStores
-  and require(DataStores)
+DataStores = DataStores and require(DataStores)
   or game:GetService("DataStoreService")
 
 local DS = {}

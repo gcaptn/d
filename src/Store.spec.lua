@@ -7,7 +7,7 @@ return function()
   local store, datastore, testKey
 
   beforeEach(function()
-    testKey = "testkey"..HttpService:GenerateGUID()
+    testKey = "testkey" .. HttpService:GenerateGUID()
     store = Store.new("test")
     datastore = MockDataStores:GetDataStore("test")
   end)
@@ -22,23 +22,23 @@ return function()
 
       expect(Store.isEntry({
         meta = {
-          version = 0
-        }
+          version = 0,
+        },
       })).to.equal(true)
 
       expect(Store.isEntry()).to.equal(false)
 
       expect(Store.isEntry({
         meta = {
-          version = ""
-        }
+          version = "",
+        },
       })).to.equal(false)
 
       expect(Store.isEntry({
         meta = {
           version = 0,
-          lock = Lock.new()
-        }
+          lock = Lock.new(),
+        },
       })).to.equal(true)
     end)
   end)
@@ -46,7 +46,7 @@ return function()
   describe("Store:defaultTo()", function()
     it("sets a deep copy of a value as the default value", function()
       local default = {
-        nested = {}
+        nested = {},
       }
 
       store:defaultTo(default)
@@ -62,7 +62,7 @@ return function()
       testEntry.data = "testValue"
 
       datastore:ImportFromJSON({
-        [testKey] = testEntry
+        [testKey] = testEntry,
       })
 
       local _, entry = store:load(testKey):await()
@@ -71,7 +71,7 @@ return function()
 
     it("migrates incompatible values from the datastore", function()
       datastore:ImportFromJSON({
-        [testKey] = "testValue"
+        [testKey] = "testValue",
       })
       local _, entry = store:load(testKey):await()
       expect(entry.data).to.equal("testValue")
@@ -81,38 +81,38 @@ return function()
       local default = {
         level = 0,
         items = {
-            {
-              name = "donut",
-              type = "food"
-            }
-          }
-        }
+          {
+            name = "donut",
+            type = "food",
+          },
+        },
+      }
 
-        store:defaultTo(default)
-        local _, entry = store:load(testKey):await()
-        local value = entry.data
+      store:defaultTo(default)
+      local _, entry = store:load(testKey):await()
+      local value = entry.data
 
-        expect(function()
-          assert(type(value) == "table")
-          assert(value.level == 0)
-          assert(type(value.items) == "table")
-          assert(type(value.items[1]) == "table")
-          assert(value.items[1].name == "donut")
-          assert(value.items[1].type == "food")
-        end).never.to.throw()
-        expect(value).never.to.equal(store._defaultValue)
-        expect(value.items).never.to.equal(store._defaultValue.items)
-      end)
+      expect(function()
+        assert(type(value) == "table")
+        assert(value.level == 0)
+        assert(type(value.items) == "table")
+        assert(type(value.items[1]) == "table")
+        assert(value.items[1].name == "donut")
+        assert(value.items[1].type == "food")
+      end).never.to.throw()
+      expect(value).never.to.equal(store._defaultValue)
+      expect(value.items).never.to.equal(store._defaultValue.items)
+    end)
 
-      it("refuses to load if the lock is inaccessible", function()
-        local entry = Store.newEntry()
-        local lock = Lock.new()
-        lock.jobId = "a"
-        entry.meta.lock = lock
+    it("refuses to load if the lock is inaccessible", function()
+      local entry = Store.newEntry()
+      local lock = Lock.new()
+      lock.jobId = "a"
+      entry.meta.lock = lock
 
-        datastore:ImportFromJSON({
-          [testKey] = entry
-        })
+      datastore:ImportFromJSON({
+        [testKey] = entry,
+      })
 
       local success, _ = store:load(testKey):await()
       expect(success).to.equal(false)
@@ -124,7 +124,7 @@ return function()
       entry.data = "testValue"
 
       datastore:ImportFromJSON({
-        [testKey] = entry
+        [testKey] = entry,
       })
 
       local _, datastoreEntry = store:load(testKey):await()
@@ -134,7 +134,7 @@ return function()
     it("replaces the lock when successful", function()
       local oldEntry = Store.newEntry()
       datastore:ImportFromJSON({
-        [testKey] = oldEntry
+        [testKey] = oldEntry,
       })
 
       local _, datastoreEntry = store:load(testKey):await()
@@ -145,7 +145,7 @@ return function()
       lock.timestamp -= 10
       oldEntry.meta.lock = lock
       datastore:ImportFromJSON({
-        [testKey] = oldEntry
+        [testKey] = oldEntry,
       })
 
       _, datastoreEntry = store:load(testKey):await()
@@ -166,7 +166,7 @@ return function()
       correctEntry.data = "correctEntry"
 
       datastore:ImportFromJSON({
-        [testKey] = correctEntry
+        [testKey] = correctEntry,
       })
 
       local wrongEntry = Store.newEntry()
@@ -185,7 +185,7 @@ return function()
       correctEntry.data = "correctEntry"
 
       datastore:ImportFromJSON({
-        [testKey] = correctEntry
+        [testKey] = correctEntry,
       })
 
       local wrongEntry = Store.newEntry()
@@ -197,9 +197,9 @@ return function()
 
     caseFn("increments the version number", function()
       local entry = Store.newEntry()
-        
+
       datastore:ImportFromJSON({
-        [testKey] = entry
+        [testKey] = entry,
       })
 
       writeFunction(testKey, entry)
@@ -219,7 +219,7 @@ return function()
       entry.meta.lock = oldLock
 
       datastore:ImportFromJSON({
-        [testKey] = entry
+        [testKey] = entry,
       })
 
       store:set(testKey, entry):await()
@@ -244,7 +244,7 @@ return function()
       entry.meta.lock = oldLock
 
       datastore:ImportFromJSON({
-        [testKey] = entry
+        [testKey] = entry,
       })
 
       store:commit(testKey, entry):await()

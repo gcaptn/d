@@ -8,21 +8,10 @@ Store.__index = Store
 local msg = {
   newStoreNameString = "Cannot construct a store without a string name!",
   invalidEntry = "Value is not a valid entry!",
-  lockedEntry = function(key)
-    return ("Entry %s is currently used in another session!"):format(key)
-  end,
-  abandonVersionMismatch = function(key, entryIndex, datastoreEntryIndex)
-    return ("Entry %s is at version %i while its datastore entry is at version %i. The datastore entry will be used instead.")
-      :format(key, entryIndex, datastoreEntryIndex)
-  end,
-  abandonLockedEntry = function(key)
-    return ("Entry %s is currently used in another session. The datastore version will be used instead.")
-      :format(key)
-  end,
-  willMigrate = function(key)
-    return ("Found an incompatible entry at datastore key %s. Data will be migrated.")
-      :format(key)
-  end,
+  lockedEntry = "Entry %s is currently used in another session!",
+  abandonVersionMismatch = "Entry %s is at version %i while its datastore entry is at version %i. The datastore entry will be used instead.",
+  abandonLockedEntry = "Entry %s is currently used in another session. The datastore version will be used instead.",
+  willMigrate = "Found an incompatible entry at datastore key %s. Data will be migrated.",
 }
 
 local function deep(value)
@@ -39,7 +28,7 @@ end
 
 function Store.new(name)
   assert(type(name) == "string", msg.newStoreNameString)
-  
+
   return setmetatable({
     _name = name,
   }, Store)
@@ -55,8 +44,8 @@ end
 function Store.newEntry()
   return {
     meta = {
-      version = 0
-    }
+      version = 0,
+    },
   }
 end
 
@@ -86,16 +75,16 @@ function Store:load(key)
       elseif Store.isEntry(datastoreEntry) then
         entry = datastoreEntry
       else
-        warn(msg.willMigrate(key))
+        warn(msg.willMigrate:format(key))
         entry = Store.newEntry()
         entry.data = datastoreEntry
       end
 
-      if 
-        entry.meta.lock ~= nil 
+      if
+        entry.meta.lock ~= nil
         and not Lock.isAccessible(entry.meta.lock)
       then
-        rejectValue = msg.lockedEntry(key)
+        rejectValue = msg.lockedEntry:format(key)
         return nil
       end
 
@@ -136,11 +125,11 @@ local function writeToStore(storeName, key, entry, modifier)
         return nil
       end
 
-      if 
-        oldEntry.meta.lock ~= nil 
-        and not Lock.isAccessible(oldEntry.meta.lock) 
+      if
+        oldEntry.meta.lock ~= nil
+        and not Lock.isAccessible(oldEntry.meta.lock)
       then
-        warn(msg.abandonLockedEntry(key))
+        warn(msg.abandonLockedEntry:format(key))
         return nil
       end
 
@@ -163,7 +152,7 @@ function Store:set(key, entry)
   end)
 end
 
--- commit an aquired entry in the store and releases the lock
+-- commit an aquired entry in the store and release the lock
 -- (key: any, entry: Entry) => Promise<void>
 function Store:commit(key, entry)
   return writeToStore(self._name, key, entry, function(entry)

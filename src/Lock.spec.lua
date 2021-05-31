@@ -7,7 +7,7 @@ return function()
 
       expect(Lock.isValid({
         jobId = "",
-        timestamp = 0
+        timestamp = 0,
       })).to.equal(true)
 
       expect(Lock.isValid({
@@ -15,7 +15,7 @@ return function()
       })).to.equal(false)
 
       expect(Lock.isValid({
-        timestamp = 0
+        timestamp = 0,
       })).to.equal(false)
 
       expect(Lock.isValid()).to.equal(false)
