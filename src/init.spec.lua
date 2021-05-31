@@ -1,7 +1,7 @@
 local D = require(script.Parent)
 
 return function()
-  describe("loadStore", function()
+  describe("D.loadStore()", function()
     it("returns a cached store", function()
       local store = D.loadStore("test")
       local store2 = D.loadStore("test")

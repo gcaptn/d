@@ -19,7 +19,7 @@ return function()
   describe("Store.isValid()", function()
     it("can validate entries", function()
       expect(Store.isEntry(Store.newEntry())).to.equal(true)
-      
+
       expect(Store.isEntry({
         meta = {
           version = 0
@@ -107,7 +107,7 @@ return function()
       it("refuses to load if the lock is inaccessible", function()
         local entry = Store.newEntry()
         local lock = Lock.new()
-        lock.placeId = -10
+        lock.jobId = "a"
         entry.meta.lock = lock
 
         datastore:ImportFromJSON({
@@ -180,7 +180,7 @@ return function()
     caseFn("will not write to store if the lock is inaccessible", function()
       local correctEntry = Store.newEntry()
       local usedLock = Lock.new()
-      usedLock.placeId = -10
+      usedLock.jobId = "a"
       correctEntry.meta.lock = usedLock
       correctEntry.data = "correctEntry"
 
@@ -207,9 +207,9 @@ return function()
     end)
   end
 
-  describe("Store:write()", function()
+  describe("Store:set()", function()
     writeToStoreTest(it, function(key, entry)
-      store:write(key, entry):await()
+      store:set(key, entry):await()
     end)
 
     it("renews the lock", function()
@@ -222,7 +222,7 @@ return function()
         [testKey] = entry
       })
 
-      store:write(testKey, entry):await()
+      store:set(testKey, entry):await()
 
       local datastoreEntry = datastore:GetAsync(testKey)
 
