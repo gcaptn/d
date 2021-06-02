@@ -44,9 +44,9 @@ return function()
       local lock = Lock.new()
 
       lock.jobId = "a"
-      lock.timestamp += Lock.constants.lockExpire * 2
+      lock.timestamp -= Lock.constants.lockExpire
 
-      expect(Lock.isAccessible(lock)).to.equal(false)
+      expect(Lock.isAccessible(lock)).to.equal(true)
     end)
   end)
 end

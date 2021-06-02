@@ -8,9 +8,9 @@ local DS = {}
 
 -- todo
 
-function DS.perform(task, storeName, key, fn)
+function DS.perform(methodName, storeName, key, ...)
   local store = DataStores:GetDataStore(storeName)
-  store[task](store, key, fn)
+  store[methodName](store, key, ...)
 end
 
 return DS
