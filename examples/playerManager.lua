@@ -11,6 +11,7 @@ playerStore:defaultTo({
 
 local function upgradeSchema(entry)
   if entry.data.schemaVersion == 0 then
+    entry.data.schemaVersion = 1
     entry.data.coins = 100
   end
   return entry
