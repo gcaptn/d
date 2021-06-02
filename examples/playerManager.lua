@@ -20,7 +20,9 @@ local function onPlayerAdded(player)
   playerStore
     :load(player.UserId)
     :andThen(function(entry)
-      playerEntries[player.UserId] = upgradeSchema(entry)
+      if player:IsDescendantOf(Players) then
+        playerEntries[player.UserId] = upgradeSchema(entry)
+      end
     end)
     :catch(function()
       player:Kick("There was a problem loading your data.")
@@ -31,7 +33,7 @@ local function onPlayerRemoving(player)
   local entry = playerEntries[player.UserId]
   if entry then
     playerEntries[player.UserId] = nil
-    playerStore:commit(player.UserId, entry):await()
+    playerStore:commit(player.UserId, entry):expect()
   end
 end
 

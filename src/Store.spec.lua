@@ -65,7 +65,7 @@ return function()
         [testKey] = testEntry,
       })
 
-      local _, entry = store:load(testKey):await()
+      local entry = store:load(testKey):expect()
       expect(entry.data).to.equal("testValue")
     end)
 
@@ -73,7 +73,7 @@ return function()
       datastore:ImportFromJSON({
         [testKey] = "testValue",
       })
-      local _, entry = store:load(testKey):await()
+      local entry = store:load(testKey):expect()
       expect(entry.data).to.equal("testValue")
     end)
 
@@ -89,7 +89,7 @@ return function()
       }
 
       store:defaultTo(default)
-      local _, entry = store:load(testKey):await()
+      local entry = store:load(testKey):expect()
       local value = entry.data
 
       expect(function()
@@ -114,7 +114,7 @@ return function()
         [testKey] = entry,
       })
 
-      local success, _ = store:load(testKey):await()
+      local success = store:load(testKey):await()
       expect(success).to.equal(false)
     end)
 
@@ -127,7 +127,7 @@ return function()
         [testKey] = entry,
       })
 
-      local _, datastoreEntry = store:load(testKey):await()
+      local datastoreEntry = store:load(testKey):expect()
       expect(datastoreEntry.data).to.equal("testValue")
     end)
 
@@ -137,7 +137,7 @@ return function()
         [testKey] = oldEntry,
       })
 
-      local _, datastoreEntry = store:load(testKey):await()
+      local datastoreEntry = store:load(testKey):expect()
       expect(datastoreEntry.meta.lock).to.be.ok()
 
       oldEntry = Store.newEntry()
@@ -148,7 +148,7 @@ return function()
         [testKey] = oldEntry,
       })
 
-      _, datastoreEntry = store:load(testKey):await()
+      datastoreEntry = store:load(testKey):expect()
       expect(datastoreEntry.meta.lock.timestamp > lock.timestamp).to.equal(true)
     end)
   end)
@@ -209,7 +209,7 @@ return function()
 
   describe("Store:set()", function()
     writeToStoreTest(it, function(key, entry)
-      store:set(key, entry):await()
+      store:set(key, entry):expect()
     end)
 
     it("renews the lock", function()
@@ -222,7 +222,7 @@ return function()
         [testKey] = entry,
       })
 
-      store:set(testKey, entry):await()
+      store:set(testKey, entry):expect()
 
       local datastoreEntry = datastore:GetAsync(testKey)
 
@@ -234,7 +234,7 @@ return function()
 
   describe("Store:commit()", function()
     writeToStoreTest(it, function(key, entry)
-      store:commit(key, entry):await()
+      store:commit(key, entry):expect()
     end)
 
     it("deletes the lock", function()
@@ -247,7 +247,7 @@ return function()
         [testKey] = entry,
       })
 
-      store:commit(testKey, entry):await()
+      store:commit(testKey, entry):expect()
       expect(datastore:GetAsync(testKey).meta.lock).never.to.be.ok()
     end)
   end)

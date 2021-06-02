@@ -117,7 +117,7 @@ local function writeToStore(storeName, key, entry, modifier)
       end
 
       if oldEntry.meta.version ~= entry.meta.version then
-        warn(msg.abandonVersionMismatch(
+        warn(msg.abandonVersionMismatch:format(
           key,
           entry.meta.version,
           oldEntry.meta.version
