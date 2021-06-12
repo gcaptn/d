@@ -116,20 +116,20 @@ local function writeToStore(storeName, key, entry, modifier)
         return modifier(entry)
       end
 
+      if
+        oldEntry.meta.lock ~= nil
+        and not Lock.isAccessible(oldEntry.meta.lock)
+      then
+        warn(msg.abandonLockedEntry:format(key))
+        return nil
+      end
+
       if oldEntry.meta.version ~= entry.meta.version then
         warn(msg.abandonVersionMismatch:format(
           key,
           entry.meta.version,
           oldEntry.meta.version
         ))
-        return nil
-      end
-
-      if
-        oldEntry.meta.lock ~= nil
-        and not Lock.isAccessible(oldEntry.meta.lock)
-      then
-        warn(msg.abandonLockedEntry:format(key))
         return nil
       end
 
