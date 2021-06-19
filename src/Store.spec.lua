@@ -100,6 +100,7 @@ return function()
         assert(value.items[1].name == "donut")
         assert(value.items[1].type == "food")
       end).never.to.throw()
+
       expect(value).never.to.equal(store._defaultValue)
       expect(value.items).never.to.equal(store._defaultValue.items)
     end)
@@ -249,6 +250,57 @@ return function()
 
       store:commit(testKey, entry):expect()
       expect(datastore:GetAsync(testKey).meta.lock).never.to.be.ok()
+    end)
+  end)
+
+  describe("Store:update()", function()
+    it("updates with the function's value", function()
+      local entry = Store.newEntry()
+      entry.meta.lock = Lock.new()
+      entry.data = "wrongData"
+
+      datastore:ImportFromJSON({
+        [testKey] = entry,
+      })
+
+      store
+        :update(testKey, function(previousEntry)
+          expect(previousEntry.data).to.equal("wrongData")
+          previousEntry.data = "correctData"
+          return previousEntry
+        end)
+        :expect()
+
+      local datastoreEntry = datastore:GetAsync(testKey)
+      expect(datastoreEntry.data).to.equal("correctData")
+      expect(datastoreEntry.meta.lock).to.be.ok()
+    end)
+
+    it("does not update when the function returns nil", function()
+      local entry = Store.newEntry()
+      entry.meta.lock = Lock.new()
+      entry.data = "correctData"
+
+      datastore:ImportFromJSON({
+        [testKey] = entry,
+      })
+
+      store
+        :update(testKey, function()
+        end)
+        :expect()
+
+      expect(datastore:GetAsync(testKey).data).to.equal("correctData")
+    end)
+
+    it("errors when the entry is invalid", function()
+      expect(function()
+        store
+          :update(testKey, function()
+            return ""
+          end)
+          :expect()
+      end).to.throw()
     end)
   end)
 end

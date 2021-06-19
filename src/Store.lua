@@ -106,14 +106,13 @@ function Store:load(key)
   end)
 end
 
-local function writeToStore(storeName, key, entry, modifier)
-  assert(Store.isEntry(entry), msg.invalidEntry)
+local function writeToStore(storeName, key, modifier)
   key = tostring(key)
 
   return Promise.new(function(resolve)
     DS.perform("UpdateAsync", storeName, key, function(oldEntry)
       if oldEntry == nil or not Store.isEntry(oldEntry) then
-        return modifier(entry)
+        return modifier(oldEntry)
       end
 
       if
@@ -124,20 +123,26 @@ local function writeToStore(storeName, key, entry, modifier)
         return nil
       end
 
-      if oldEntry.meta.version ~= entry.meta.version then
-        warn(msg.abandonVersionMismatch:format(
-          key,
-          entry.meta.version,
-          oldEntry.meta.version
-        ))
-        return nil
-      end
-
-      return modifier(entry)
+      return modifier(oldEntry)
     end)
 
     resolve()
   end)
+end
+
+-- this is just for DRY
+local function prepareEntry(key, entry, oldEntry)
+  if oldEntry.meta.version ~= entry.meta.version then
+    warn(msg.abandonVersionMismatch:format(
+      key,
+      entry.meta.version,
+      oldEntry.meta.version
+    ))
+    return
+  end
+
+  entry.meta.version += 1
+  return entry
 end
 
 -- write to an aquired entry in the store
@@ -145,20 +150,48 @@ end
 -- only respects the existing entry in the datastore
 -- (key: any, entry: Entry) => Promise<void>
 function Store:set(key, entry)
-  return writeToStore(self._name, key, entry, function(entry)
-    entry.meta.version += 1
-    entry.meta.lock = Lock.new()
-    return entry
+  assert(Store.isEntry(entry), msg.invalidEntry)
+
+  return writeToStore(self._name, key, function(oldEntry)
+    local newEntry = prepareEntry(key, entry, oldEntry)
+    if not newEntry then
+      return
+    end
+
+    newEntry.meta.lock = Lock.new()
+    return newEntry
   end)
 end
 
 -- commit an aquired entry in the store and release the lock
 -- (key: any, entry: Entry) => Promise<void>
 function Store:commit(key, entry)
-  return writeToStore(self._name, key, entry, function(entry)
-    entry.meta.version += 1
-    entry.meta.lock = nil
-    return entry
+  assert(Store.isEntry(entry), msg.invalidEntry)
+
+  return writeToStore(self._name, key, function(oldEntry)
+    local newEntry = prepareEntry(key, entry, oldEntry)
+    if not newEntry then
+      return
+    end
+
+    newEntry.meta.lock = nil
+    return newEntry
+  end)
+end
+
+-- update an aquired entry in the store
+-- same behavior as :set()
+-- (key: any, fn: (Entry) => Entry?) => Promise<void>
+function Store:update(key, fn)
+  return writeToStore(self._name, key, function(entry)
+    local newEntry = fn(entry)
+
+    if newEntry then
+      assert(Store.isEntry(newEntry), msg.invalidEntry)
+      entry.meta.version += 1
+      entry.meta.lock = Lock.new()
+      return entry
+    end
   end)
 end
 
