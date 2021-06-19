@@ -132,7 +132,7 @@ end
 
 -- this is just for DRY
 local function prepareEntry(key, entry, oldEntry)
-  if oldEntry.meta.version ~= entry.meta.version then
+  if oldEntry and oldEntry.meta.version ~= entry.meta.version then
     warn(msg.abandonVersionMismatch:format(
       key,
       entry.meta.version,
@@ -179,12 +179,19 @@ function Store:commit(key, entry)
   end)
 end
 
--- update an aquired entry in the store
--- same behavior as :set()
--- (key: any, fn: (Entry) => Entry?) => Promise<void>
+-- update an aquired entry in the store.
+-- if the datastore entry is incompatible / nil, the function will
+-- receive a new / migrated entry
+-- (key: any, fn: (entry: Entry) => Entry?) => Promise<void>
 function Store:update(key, fn)
-  return writeToStore(self._name, key, function(entry)
-    local newEntry = fn(entry)
+  return writeToStore(self._name, key, function(datastoreEntry)
+    if not Store.isEntry(datastoreEntry) then
+      local data = datastoreEntry
+      datastoreEntry = Store.newEntry()
+      datastoreEntry.data = data
+    end
+
+    local newEntry = fn(datastoreEntry)
 
     if newEntry then
       assert(Store.isEntry(newEntry), msg.invalidEntry)

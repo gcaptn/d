@@ -33,6 +33,7 @@ return function()
       expect(Store.isEntry({
         meta = {
           version = "",
+          lock = Lock.new(),
         },
       })).to.equal(false)
 
@@ -256,6 +257,28 @@ return function()
   end)
 
   describe("Store:update()", function()
+    it("always passes an entry to the function", function()
+      datastore:ImportFromJSON({
+        [testKey] = "correctData",
+      })
+
+      -- incompatible entries
+      store
+        :update(testKey, function(previousEntry)
+          expect(Store.isEntry(previousEntry)).to.equal(true)
+          expect(previousEntry.data).to.equal("correctData")
+        end)
+        :expect()
+
+      -- nil entries
+      store
+        :update(testKey .. "1", function(previousEntry)
+          expect(previousEntry).to.be.ok()
+          expect(Store.isEntry(previousEntry)).to.equal(true)
+        end)
+        :expect()
+    end)
+
     it("updates with the function's value", function()
       local entry = Store.newEntry()
       entry.meta.lock = Lock.new()
