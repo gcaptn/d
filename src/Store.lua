@@ -2,10 +2,7 @@ local Promise = require(script.Parent.Promise)
 local DS = require(script.Parent.DataStoreInterface)
 local Lock = require(script.Parent.Lock)
 
-local Store = {}
-Store.__index = Store
-
-local msg = {
+local messages = {
   newStoreNameString = "Cannot construct a store without a string name!",
   invalidEntry = "Value is not a valid entry!",
   lockedEntry = "Entry %s is currently used in another session!",
@@ -26,20 +23,27 @@ local function deep(value)
   end
 end
 
+local Store = {}
+Store.__index = Store
+
+-- Store {
+--   _name: string,
+--   _defaultValue?: any,
+-- }
 function Store.new(name)
-  assert(type(name) == "string", msg.newStoreNameString)
+  assert(type(name) == "string", messages.newStoreNameString)
 
   return setmetatable({
     _name = name,
   }, Store)
 end
 
--- type Entry = {
+-- Entry {
 --   meta: {
 --     version: number,
---     lock?: Lock
+--     lock?: Lock,
 --   },
---   data: any
+--   data?: any,
 -- }
 function Store.newEntry()
   return {
@@ -75,7 +79,7 @@ function Store:load(key)
       elseif Store.isEntry(datastoreEntry) then
         entry = datastoreEntry
       else
-        warn(msg.willMigrate:format(key))
+        warn(messages.willMigrate:format(key))
         entry = Store.newEntry()
         entry.data = datastoreEntry
       end
@@ -84,7 +88,7 @@ function Store:load(key)
         entry.meta.lock ~= nil
         and not Lock.isAccessible(entry.meta.lock)
       then
-        rejectValue = msg.lockedEntry:format(key)
+        rejectValue = messages.lockedEntry:format(key)
         return nil
       end
 
@@ -119,7 +123,7 @@ local function writeToStore(storeName, key, modifier)
         oldEntry.meta.lock ~= nil
         and not Lock.isAccessible(oldEntry.meta.lock)
       then
-        warn(msg.abandonLockedEntry:format(key))
+        warn(messages.abandonLockedEntry:format(key))
         return nil
       end
 
@@ -130,10 +134,10 @@ local function writeToStore(storeName, key, modifier)
   end)
 end
 
--- this is just for DRY
+-- this is here just for DRY
 local function prepareEntry(key, entry, oldEntry)
   if oldEntry and oldEntry.meta.version ~= entry.meta.version then
-    warn(msg.abandonVersionMismatch:format(
+    warn(messages.abandonVersionMismatch:format(
       key,
       entry.meta.version,
       oldEntry.meta.version
@@ -150,7 +154,7 @@ end
 -- only respects the existing entry in the datastore
 -- (key: any, entry: Entry) => Promise<void>
 function Store:set(key, entry)
-  assert(Store.isEntry(entry), msg.invalidEntry)
+  assert(Store.isEntry(entry), messages.invalidEntry)
 
   return writeToStore(self._name, key, function(oldEntry)
     local newEntry = prepareEntry(key, entry, oldEntry)
@@ -166,7 +170,7 @@ end
 -- commit an aquired entry in the store and release the lock
 -- (key: any, entry: Entry) => Promise<void>
 function Store:commit(key, entry)
-  assert(Store.isEntry(entry), msg.invalidEntry)
+  assert(Store.isEntry(entry), messages.invalidEntry)
 
   return writeToStore(self._name, key, function(oldEntry)
     local newEntry = prepareEntry(key, entry, oldEntry)
@@ -179,22 +183,28 @@ function Store:commit(key, entry)
   end)
 end
 
--- update an aquired entry in the store.
--- if the datastore entry is incompatible / nil, the function will
--- receive a new / migrated entry
--- (key: any, fn: (entry: Entry) => Entry?) => Promise<void>
+-- update an aquired entry in the store
+-- if the datastore entry is nil / incompatible, the function
+-- will receive a new / migrated entry
+-- (key: any, fn: (entry: Entry) => Entry | nil) => Promise<void>
 function Store:update(key, fn)
   return writeToStore(self._name, key, function(datastoreEntry)
     if not Store.isEntry(datastoreEntry) then
-      local data = datastoreEntry
+      if datastoreEntry ~= nil then
+        warn(messages.willMigrate:format(key))
+      end
+
+      local data = datastoreEntry == nil and deep(self._defaultValue)
+        or datastoreEntry
+
       datastoreEntry = Store.newEntry()
       datastoreEntry.data = data
     end
 
     local newEntry = fn(datastoreEntry)
 
-    if newEntry then
-      assert(Store.isEntry(newEntry), msg.invalidEntry)
+    if newEntry ~= nil then
+      assert(Store.isEntry(newEntry), messages.invalidEntry)
       newEntry.meta.version += 1
       newEntry.meta.lock = Lock.new()
       return newEntry

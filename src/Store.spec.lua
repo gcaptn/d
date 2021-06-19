@@ -270,11 +270,16 @@ return function()
         end)
         :expect()
 
+      local default = { a = "defaultData" }
+      store:defaultTo(default)
+
       -- nil entries
       store
         :update(testKey .. "1", function(previousEntry)
           expect(previousEntry).to.be.ok()
           expect(Store.isEntry(previousEntry)).to.equal(true)
+          expect(previousEntry.data).never.to.equal(default) -- ensure deep copy
+          expect(previousEntry.data.a).to.equal("defaultData")
         end)
         :expect()
     end)
@@ -322,7 +327,7 @@ return function()
       expect(function()
         store
           :update(testKey, function()
-            return ""
+            return false
           end)
           :expect()
       end).to.throw()
