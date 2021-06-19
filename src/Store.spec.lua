@@ -12,8 +12,10 @@ return function()
     datastore = MockDataStores:GetDataStore("test")
   end)
 
-  it("throws when constructing without a string name", function()
-    expect(Store.new).to.throw()
+  describe("Store.new()", function()
+    it("throws when constructing without a string name", function()
+      expect(Store.new).to.throw()
+    end)
   end)
 
   describe("Store.isValid()", function()

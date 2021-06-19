@@ -188,9 +188,9 @@ function Store:update(key, fn)
 
     if newEntry then
       assert(Store.isEntry(newEntry), msg.invalidEntry)
-      entry.meta.version += 1
-      entry.meta.lock = Lock.new()
-      return entry
+      newEntry.meta.version += 1
+      newEntry.meta.lock = Lock.new()
+      return newEntry
     end
   end)
 end
